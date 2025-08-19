@@ -57,7 +57,7 @@ app.add_middleware(
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # OMDB API Key
-OMDB_API_KEY = "3d7c9a51" 
+OMDB_API_KEY = "USE YOUR API" 
 
 # Load models and data using relative paths
 script_dir = os.path.dirname(__file__)
@@ -230,3 +230,4 @@ def recommend_movies(title: str):
         return JSONResponse(content={"error": "Could not find suitable recommendations. Try a different movie."}, status_code=404)
 
     return JSONResponse(content=recommendations)
+
