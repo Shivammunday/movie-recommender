@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CineMatch - Movie Recommendation Engine</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        netflix: '#E50914',
+                        'dark-gray': '#141414',
+                        'medium-gray': '#1F1F1F',
+                        'light-gray': '#2A2A2A'
+                    },
+                    fontFamily: {
+                        'inter': ['Inter', 'sans-serif']
+                    }
+                }
+            }
+        };
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-dark-gray text-white font-inter min-h-screen">
+    <!-- Header Component -->
+    <header class="bg-medium-gray shadow-lg border-b border-light-gray">
+        <div class="container mx-auto px-4 py-6">
+            <div class="flex items-center justify-between">
+                <h1 class="text-3xl font-bold text-netflix">
+                    <i class="fas fa-film mr-2"></i>
+                    CineMatch
+                </h1>
+                <p class="text-gray-400 hidden md:block">Discover your next favorite movie</p>
+            </div>
+        </div>
+    </header>
+    <!-- End Header Component -->
+
+    <!-- Search Section Component -->
+    <section class="container mx-auto px-4 py-8">
+        <div class="max-w-2xl mx-auto">
+            <h2 class="text-2xl font-semibold mb-6 text-center">Search Movies</h2>
+            
+            <!-- Search Input -->
+            <div class="relative mb-6">
+                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <i class="fas fa-search text-gray-400"></i>
+                </div>
+                <input 
+                    type="text" 
+                    id="searchInput"
+                    placeholder="Search for a movie..."
+                    class="w-full pl-10 pr-4 py-3 bg-medium-gray border border-light-gray rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-netflix focus:border-transparent transition-all duration-200"
+                >
+            </div>
+
+            <!-- Search Results Dropdown -->
+            <div id="searchResults" class="hidden bg-medium-gray border border-light-gray rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                <!-- Search results will be dynamically inserted here -->
+            </div>
+
+            <!-- Search Button -->
+            <button 
+                id="searchButton"
+                class="w-full bg-netflix hover:bg-red-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200 flex items-center justify-center"
+            >
+                <i class="fas fa-magic mr-2"></i>
+                Get Recommendations
+            </button>
+        </div>
+    </section>
+    <!-- End Search Section Component -->
+
+    <!-- Loading State Component -->
+    <div id="loadingState" class="hidden text-center py-12">
+        <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-netflix"></div>
+        <p class="mt-4 text-gray-400">Finding your perfect matches...</p>
+    </div>
+    <!-- End Loading State Component -->
+
+    <!-- Error State Component -->
+    <div id="errorState" class="hidden container mx-auto px-4 py-8">
+        <div class="max-w-md mx-auto bg-red-900 bg-opacity-30 border border-red-700 rounded-lg p-6 text-center">
+            <i class="fas fa-exclamation-triangle text-red-400 text-2xl mb-3"></i>
+            <h3 class="text-lg font-semibold mb-2">Oops! Something went wrong</h3>
+            <p class="text-red-200 mb-4" id="errorMessage">Unable to fetch recommendations. Please try again.</p>
+            <button id="retryButton" class="bg-netflix hover:bg-red-700 text-white px-4 py-2 rounded transition-colors duration-200">
+                Try Again
+            </button>
+        </div>
+    </div>
+    <!-- End Error State Component -->
+
+    <!-- Recommendations Section Component -->
+    <section id="recommendationsSection" class="hidden container mx-auto px-4 py-8">
+        <h2 class="text-2xl font-semibold mb-8 text-center">Recommended Movies</h2>
+        
+        <!-- Selected Movie Display (This is the main title above the card) -->
+        <div class="mb-8 text-center">
+            <p class="text-gray-400 mb-2">Based on your selection:</p>
+            <h3 class="text-xl font-medium text-netflix" id="selectedMovieTitleDisplay"></h3>
+        </div>
+
+        <!-- Selected Movie Detailed Card -->
+        <div id="selectedMovieDetailsCard" class="hidden max-w-2xl mx-auto bg-medium-gray rounded-lg shadow-lg p-6 mb-8 flex flex-col md:flex-row items-center">
+            <img id="selectedMoviePoster" src="" alt="Selected Movie Poster" class="w-32 h-48 object-cover rounded-lg mr-6 mb-4 md:mb-0" onerror="this.onerror=null;this.src='https://placehold.co/128x192/1F1F1F/FFFFFF?text=No+Poster';">
+            <div class="text-center md:text-left flex-1">
+                <h3 id="selectedMovieCardTitle" class="text-xl font-semibold text-white mb-2"></h3>
+                <p id="selectedMovieCardRating" class="text-sm text-gray-400 mb-1"></p>
+                <p id="selectedMovieCardPlot" class="text-sm text-gray-300"></p>
+            </div>
+        </div>
+        <!-- END Selected Movie Detailed Card -->
+
+        <!-- Movie Grid -->
+        <div id="movieGrid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
+            <!-- Movie cards will be dynamically inserted here -->
+        </div>
+    </section>
+    <!-- End Recommendations Section Component -->
+
+    <!-- Footer Component -->
+    <footer class="bg-medium-gray border-t border-light-gray mt-16">
+        <div class="container mx-auto px-4 py-8">
+            <div class="text-center">
+                <p class="text-gray-400 mb-2">
+                    <i class="fas fa-heart text-netflix mr-1"></i>
+                    Powered by Machine Learning
+                </p>
+                <p class="text-sm text-gray-500">Discover movies you'll love with intelligent recommendations</p>
+            </div>
+        </div>
+    </footer>
+    <!-- End Footer Component -->
+
+    <script>
+        (function() {
+            // API Configuration
+            const API_BASE_URL = 'http://127.0.0.1:8000'; 
+
+            // DOM Elements
+            const searchInput = document.getElementById('searchInput');
+            const searchResults = document.getElementById('searchResults');
+            const searchButton = document.getElementById('searchButton');
+            const loadingState = document.getElementById('loadingState');
+            const errorState = document.getElementById('errorState');
+            const errorMessageDisplay = document.getElementById('errorMessage');
+            const retryButton = document.getElementById('retryButton');
+            const recommendationsSection = document.getElementById('recommendationsSection');
+            const selectedMovieTitleDisplay = document.getElementById('selectedMovieTitleDisplay');
+            const selectedMovieDetailsCard = document.getElementById('selectedMovieDetailsCard');
+            const selectedMoviePoster = document.getElementById('selectedMoviePoster');
+            const selectedMovieCardTitle = document.getElementById('selectedMovieCardTitle');
+            const selectedMovieCardRating = document.getElementById('selectedMovieCardRating');
+            const selectedMovieCardPlot = document.getElementById('selectedMovieCardPlot');
+            const movieGrid = document.getElementById('movieGrid');
+            
+            // State variables
+            let selectedMovie = null; // Will store the full movie object after fetching details
+            let searchTimeout = null;
+            let allMovieTitlesData = []; // Stores all movie titles fetched from backend once
+
+            // --- NEW: Fetch all movie titles on page load ---
+            document.addEventListener('DOMContentLoaded', async () => {
+                try {
+                    const response = await fetch(`${API_BASE_URL}/api/titles`);
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    const data = await response.json();
+                    allMovieTitlesData = data.titles; // Store the full list of titles
+                    console.log("INFO: All movie titles loaded for local search.");
+                } catch (error) {
+                    console.error('Error fetching all movie titles:', error);
+                    showError('Failed to load movie titles for search. Please ensure FastAPI server is running.');
+                }
+            });
+            // --- END NEW ---
+
+            // Handles input in the search bar, debouncing the search request.
+            searchInput.addEventListener('input', function(e) {
+                const query = e.target.value.trim();
+                
+                if (searchTimeout) {
+                    clearTimeout(searchTimeout);
+                }
+                
+                if (query.length < 2) {
+                    searchResults.classList.add('hidden');
+                    // Hide selected movie details and recommendations if search input is cleared
+                    selectedMovieDetailsCard.classList.add('hidden');
+                    recommendationsSection.classList.add('hidden');
+                    return;
+                }
+                
+                searchTimeout = setTimeout(() => {
+                    // --- MODIFIED: Filter locally instead of calling /search API ---
+                    const filteredTitles = allMovieTitlesData.filter(title => 
+                        title.toLowerCase().includes(query.toLowerCase())
+                    ).slice(0, 10); // Limit to top 10 results
+                    displaySearchResults(filteredTitles);
+                    // --- END MODIFIED ---
+                }, 300);
+            });
+
+            /**
+             * Displays the search results in the dropdown, showing only the title.
+             * @param {string[]} results - An array of movie titles (strings).
+             */
+            function displaySearchResults(results) {
+                if (results.length === 0) {
+                    searchResults.classList.add('hidden');
+                    return;
+                }
+                
+                searchResults.innerHTML = results.map(movieTitle => {
+                    // Pass only the movie title string to selectMovie
+                    return `
+                        <div class="px-4 py-3 hover:bg-light-gray cursor-pointer border-b border-light-gray last:border-b-0 transition-colors duration-150" onclick="selectMovie('${movieTitle.replace(/'/g, "\\'")}')">
+                            <span class="text-white">${movieTitle}</span>
+                        </div>
+                    `;
+                }).join('');
+                
+                searchResults.classList.remove('hidden');
+            }
+
+            /**
+             * Selects a movie from the search results, updates the input, and stores the movie title.
+             * Does NOT display details yet.
+             * @param {string} movieTitle - The title of the selected movie.
+             */
+            window.selectMovie = function(movieTitle) {
+                // Store only the title for now. Full details will be fetched on button click.
+                selectedMovie = { original_title: movieTitle }; 
+                searchInput.value = movieTitle;
+                searchResults.classList.add('hidden');
+
+                // Clear previous recommendations and hide selected movie card/recommendations section
+                movieGrid.innerHTML = '';
+                selectedMovieDetailsCard.classList.add('hidden'); 
+                recommendationsSection.classList.add('hidden');
+                hideError(); // Clear any previous errors
+            };
+
+            // Event listener for the "Get Recommendations" button.
+            searchButton.addEventListener('click', function() {
+                const movieTitleForRecommendation = selectedMovie ? selectedMovie.original_title : searchInput.value.trim();
+
+                if (!movieTitleForRecommendation) {
+                    showError('Please enter or select a movie to get recommendations.');
+                    return;
+                }
+                
+                getRecommendations(movieTitleForRecommendation);
+            });
+
+            /**
+             * Fetches movie recommendations from the FastAPI backend.
+             * This function now also handles fetching the details for the *selected* movie.
+             * @param {string} movieTitle - The title of the movie to base recommendations on.
+             */
+            async function getRecommendations(movieTitle) {
+                showLoading(); // Show loading spinner and prepare selected movie card area
+                
+                try {
+                    // Step 1: Fetch details for the selected movie
+                    const selectedMovieDetailsResponse = await fetch(`${API_BASE_URL}/get-movie-details?title=${encodeURIComponent(movieTitle)}`);
+                    if (!selectedMovieDetailsResponse.ok) {
+                        const errorData = await selectedMovieDetailsResponse.json();
+                        throw new Error(errorData.detail || 'Failed to get selected movie details.');
+                    }
+                    const selectedMovieDetails = await selectedMovieDetailsResponse.json();
+                    selectedMovie = selectedMovieDetails; // Update selectedMovie with full details
+
+                    // Populate and show the selected movie details card
+                    selectedMoviePoster.src = selectedMovie.poster || 'https://placehold.co/128x192/1F1F1F/FFFFFF?text=No+Poster';
+                    selectedMoviePoster.alt = `${selectedMovie.original_title} poster`;
+                    selectedMovieCardTitle.textContent = selectedMovie.original_title;
+                    selectedMovieCardRating.textContent = selectedMovie.rating && selectedMovie.rating !== 'N/A' ? `Rating: ${selectedMovie.rating}` : 'Rating: N/A';
+                    selectedMovieCardPlot.textContent = selectedMovie.plot || 'No plot available.';
+                    selectedMovieDetailsCard.classList.remove('hidden'); // Show the card
+                    selectedMovieTitleDisplay.textContent = selectedMovie.original_title; // Update the "Based on" text
+                    selectedMovieDetailsCard.scrollIntoView({ behavior: 'smooth' });
+
+
+                    // Step 2: Fetch recommendations based on the selected movie
+                    const recommendationsResponse = await fetch(`${API_BASE_URL}/recommend?title=${encodeURIComponent(movieTitle)}`);
+                    if (!recommendationsResponse.ok) {
+                        const errorData = await recommendationsResponse.json();
+                        throw new Error(errorData.error || 'Failed to get recommendations.');
+                    }
+                    const recommendations = await recommendationsResponse.json();
+                    displayRecommendations(movieTitle, recommendations);
+
+                } catch (error) {
+                    console.error('Recommendation error:', error);
+                    showError(`Failed to get recommendations: ${error.message}. Please try again.`);
+                }
+            }
+
+            /**
+             * Displays the recommended movies in the grid.
+             * @param {string} selectedMovieTitle - The title of the movie used for recommendations.
+             * @param {object[]} recommendations - An array of movie objects with title and poster.
+             */
+            function displayRecommendations(selectedMovieTitle, recommendations) {
+                hideLoading();
+                hideError();
+                
+                // selectedMovieTitleDisplay.textContent is already set in getRecommendations
+                
+                movieGrid.innerHTML = recommendations.map(movie => `
+                    <div class="group cursor-pointer transform transition-transform duration-200 hover:scale-105">
+                        <div class="relative overflow-hidden rounded-lg shadow-lg bg-medium-gray">
+                            <div class="aspect-[2/3] relative">
+                                <img 
+                                    src="${movie.poster || 'https://placehold.co/400x600/1F1F1F/FFFFFF?text=No+Poster'}" 
+                                    alt="${movie.title} poster"
+                                    class="w-full h-full object-cover group-hover:brightness-75 transition-all duration-200"
+                                    onerror="this.onerror=null;this.src='https://placehold.co/400x600/1F1F1F/FFFFFF?text=No+Poster';"
+                                >
+                                <div class="absolute inset-0 bg-light-gray flex items-center justify-center ${movie.poster ? 'hidden' : ''}" style="display: ${movie.poster ? 'none' : 'flex'};">
+                                    <i class="fas fa-film text-4xl text-gray-500"></i>
+                                </div>
+                            </div>
+                            <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black to-transparent p-4">
+                                <h3 class="text-sm font-medium text-white truncate">${movie.title}</h3>
+                                <p class="text-xs text-gray-400">Rating: ${movie.rating || 'N/A'}</p>
+                                <p class="text-xs text-gray-500 truncate">${movie.plot || 'No plot available.'}</p>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+                
+                movieGrid.scrollIntoView({ behavior: 'smooth' }); 
+            }
+
+            // Shows the loading state.
+            function showLoading() {
+                hideError();
+                recommendationsSection.classList.remove('hidden'); // Show the main section
+                selectedMovieDetailsCard.classList.add('hidden'); // Initially hide the card during loading
+                movieGrid.innerHTML = ''; // Clear previous recommendations
+                loadingState.classList.remove('hidden');
+            }
+
+            // Hides the loading state.
+            function hideLoading() {
+                loadingState.classList.add('hidden');
+            }
+
+            /**
+             * Shows the error state with a given message.
+             * @param {string} message - The error message to display.
+             */
+            function showError(message) {
+                hideLoading();
+                errorMessageDisplay.textContent = message;
+                errorState.classList.remove('hidden');
+                movieGrid.innerHTML = ''; // Clear recommendations on error
+                selectedMovieDetailsCard.classList.add('hidden'); // Hide selected movie card on error
+            }
+
+            // Hides the error state.
+            function hideError() {
+                errorState.classList.add('hidden');
+            }
+
+            // Event listener for the retry button in the error state.
+            retryButton.addEventListener('click', function() {
+                const movieTitle = selectedMovie ? selectedMovie.original_title : searchInput.value.trim();
+                if (movieTitle) {
+                    getRecommendations(movieTitle);
+                }
+            });
+
+            // Hides search results dropdown when clicking outside of the search input or results.
+            document.addEventListener('click', function(e) {
+                if (!searchInput.contains(e.target) && !searchResults.contains(e.target)) {
+                    searchResults.classList.add('hidden');
+                }
+            });
+        })();
+    </script>
+</body>
+</html>
